@@ -1,0 +1,24 @@
+如何运行脚本
+	根目录下打开控制台, 输入InfixToPostfix.bat 或者 直接双击InfixToPostfix.bat
+
+程序相关说明：
+	convertExpr -> 将中缀表达式转为后缀表达式
+		@param expression  -> the string of infix expression
+    	RETURN -> the string of suffix expression
+    	
+    	判断步骤:
+    	1. 首先判断是否为 ')'，若是，将栈中元素持续pop至栈顶元素为'('为止，若不是，跳2
+    	2. 是否为 '+' 或 '-'，若是，循环判断pop栈顶元素是否为 '*' '/',取出并pop栈顶元素直至栈顶元素不为'*'或'/',若不是，跳3
+    	3. 判断是否为 '(' '*' '/'，若是，直接入栈
+    	4. 以上条件都不是，直接输出
+
+    main -> 调用 convertExpr函数
+    	测试方法：传入事先定义好的 str 作为参数
+    	
+        测试1:
+    		expression: (a+b)*c-(a+b)/e
+    		standard output: ab+c*ab+e/-
+
+        测试2:
+    		expression: (2+1)/(2-1)*(2+2)
+    		standard output: 21+21-22+*\/
