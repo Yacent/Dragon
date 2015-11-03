@@ -1,42 +1,111 @@
 /**
- * Created by linyx25 on 2015/10/25.
+ * Created by linyx25 on 2015/11/1..
  */
 import java.util.*;
 import java.io.*;
 
 class NFA {
+
+    /* 伪代码实现过程如下
+     *
+     * 计算ε-closure(T)
+     *      将T的所有状态压入stack中
+     *      将ε-closure(T)初始化为T
+     *      while(stack非空) {
+     *          将栈顶元素t弹出栈中
+     *          for (每个满足如下条件的u: 从t出发有一个标号为ε的转换到达状态u) {
+     *              if (u 不在ε-closure(T)中) {
+     *                  将u加入到ε-closure(T)中
+     *                  将u压入栈中
+     *              }
+     *          }
+     *      }
+     *
+     * 模拟NFA主程序
+     *      S = ε-closure(s0)
+     *      c = nextChar()
+     *      while (c != eof) {
+     *          S = ε-closure(move(S, c))
+     *          c = nextChar()
+     *      }
+     *      if (S ∩ F != ?) return yes
+     *      else return no
+     *
+     * 加入一个不在newStates中的新状态s
+     *      addState(s) {
+     *          将s压入栈newStates中
+     *          alreadyOn[s] = TRUE
+     *          for (t on move[s, ε])
+     *              if (!alreadyOn[t])
+     *                  addState[t]
+     *      }
+     *
+     *  S = ε-closure(move(S, c))的具体实现，即将新状态全部压入到oldStates当中
+     *      for (oldStates上的每个s) {
+     *          for (move[s, c]中的每个t) {
+     *              if (!alreadyOn[t]) {
+     *                  addState[t]
+     *              }
+     *          }
+     *          将s弹出oldStates栈
+     *      }
+     *
+     *      for (newStates中的每个s) {
+     *          将s弹出newStates栈
+     *          将s压入到oldStates栈
+     *          alreadyOn[s] = FALSE
+     *      }
+     */
+
+    private boolean[] alreadyOn;    // 指出哪个状态已经在newStates中，该数组存放信息和栈中存放信息相同
+    private Stack<Integer> oldStates = new Stack<>();   // 当前状态集合
+    private Stack<Integer> newStates = new Stack<>();   // 下一个状态集合
+
     /* @param move[][][] -> (state, letter, to_state)
      * @param accept_state[] -> store the accept_state of the NFA
      * @param word -> the input the string waited to recognize
      *
-     * @param result -> using for store the state that recursive in the func called recursive and the deep equal to word.length
-     * @param letterNum -> as the parameter of the move, to choose which state to go
-     *
-     * @func recursive() ->to recursive the state that the machine choose to run
-     *
      * RETURN -> if accepted then true else false
-     *
-     * 流程：
-     * 1. 构造一个递归函数recursive
-     * 2. 取得输入字符串的首位 word.charAt(0)，并计算出其相对应的值 (int)word.charAt(0) - 96，以表示输入为a b c ……
-     * 3. 对递归函数传入NFA的初始状态 move[0][*][*]
-     * 4. 传入递归函数初始状态deep为0，即状态0，deep为当前"指针"所指向字符串的字符位置
-     * 5. 根据 currentNum = (((int)word.charAt(deep) - 96)) % 27 可以获取当前深度(即指针所在字符串位置)的输入字符
-     * 6. 根据5所得的currentNum而调用move函数，去判断输入该字符，得出可能迁移到的状态 nextStates
-     * 7. 根据6所得的nextStates，分别遍历数组中可能到达的状态，分别使用递归，继续向下搜寻，直至遍历完整个字符串
-     * 8. 将7递归完后的结尾状态，加入到result当中，作为一条可能路径的结尾
-     * 9. 根据8所得的result容器，遍历其中，寻找是否有与accept_state匹配的状态
-     *      -> 有：return true
-     *      -> 无：return false
      */
     boolean recognizeString(int move[][][], int accept_state[], String word) {
-        Vector<Integer> result = new Vector<>();
-        int letterNum = ((int)word.charAt(0) - 96) % 27;
 
-        recursive(result, move[0][letterNum][0], move[0][letterNum], 0, word, move);
-        for (int i = 0; i < result.size(); i++) {
-            for (int j = 0; j < accept_state.length; j++) {
-                if (result.get(i) == accept_state[j]) {
+        // 初始化alreadyOn数组，一开始全为False，即没有新状态在栈中
+        alreadyOn = new boolean[move.length];
+        for (int i = 0; i < move.length; i++) {
+            alreadyOn[i] = false;
+        }
+
+        // 初始化构造只有ε的的状态，构造newStates栈，0为开始状态
+        addState(0, move);
+
+        /*
+         * 模拟算法主要过程，不断遍历word，调用S = ε-closure(move(S,c))，进行新旧状态集合的更新
+         * 计算到达下一状态，直至结束，判断最终状态是否在接受状态内
+         * 是 -> 可表达该字符串
+         * 否 -> 则返回false
+         */
+        for (int i = 0; i < word.length(); i++) {
+            while(!oldStates.empty()) {
+                int currentState = oldStates.peek();
+                for (int j : move[currentState][word.charAt(i) - 96]) {
+                    if (!alreadyOn[j]) {
+                        addState(j, move);
+                    }
+                }
+                oldStates.pop();
+            }
+            while(!newStates.empty()) {
+                int nextState = newStates.peek();
+                oldStates.push(newStates.pop());
+                alreadyOn[nextState] = false;
+            }
+        }
+
+        // 最后的终态集合当中，是否存在结束状态
+        while(!oldStates.empty()) {
+            int finalState = oldStates.pop();
+            for (int i = 0; i < accept_state.length; i++) {
+                if (finalState == accept_state[i]) {
                     return true;
                 }
             }
@@ -44,16 +113,23 @@ class NFA {
         return false;
     }
 
-    private void recursive(Vector<Integer> result, int nextState, int[] nextStates, int deep, String word, int move[][][]) {
-        if (deep == word.length()) {
-            result.add(nextState);
-            return;
+    /*
+     * 不断调用addState而计算得出 newStates，即新的状态集合
+     */
+    private  void addState(int i , int move[][][]) {
+        if (!alreadyOn[i]) {
+            newStates.push(i);
+            alreadyOn[i] = true;
         }
-        int currentNum = (((int)word.charAt(deep) - 96)) % 27;
-        nextStates = move[nextState][currentNum];
-        for (int j = 0; j < nextStates.length; j++) {
-            nextState = nextStates[j];
-            recursive(result, nextState, nextStates, deep + 1, word, move);
+        /*
+         * 循环判断只通过ε能到达的状态，每一次循环都判断该状态的alreadyOn布尔值是否为真
+         * 真 -> 无处理
+         * 假 -> 递归调用
+         */
+        for (int j : move[i][0]) {
+            if (!alreadyOn[j]) {
+                addState(j, move);
+            }
         }
     }
 

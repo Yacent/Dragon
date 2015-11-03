@@ -1,49 +1,35 @@
 如何运行脚本
-	根目录下打开控制台, NFA.bat 或者 NFA.bat
+	根目录下打开控制台, run.bat 或者 run.bat
 
 程序相关说明：
+	private boolean[] alreadyOn;    // 指出哪个状态已经在newStates中，该数组存放信息和栈中存放信息相同
+    private Stack<Integer> oldStates = new Stack<>();   // 当前状态集合
+    private Stack<Integer> newStates = new Stack<>();   // 下一个状态集合
+
 	recognizeString(int move[][][], int accept_state[], String word) -> 对输入字符串进行匹配
 		@param move[][][] -> (state, letter, to_state)
 	    @param accept_state[] -> store the accept_state of the NFA
 	    @param word -> the input the string waited to recognize
 	     
-	    @param result -> using for store the state that recursive in the func called recursive and the deep equal to word.length
-	    @param letterNum -> as the parameter of the move, to choose which state to go
-	     
-	    @func recursive() ->to recursive the state that the machine choose to run
-	     
 	    RETURN -> if accepted then true else false
+
+	addState(int i, move[][][]) -> 计算该状态只经过ε所能到达的状态，并更新newStates栈
 	     
 	    流程：
-	    1. 构造一个递归函数recursive
-	    2. 取得输入字符串的首位 word.charAt(0)，并计算出其相对应的值 (int)word.charAt(0) - 96，以表示输入为a b c ……
-	    3. 对递归函数传入NFA的初始状态 move[0][*][*]
-	    4. 传入递归函数初始状态deep为0，即状态0，deep为当前"指针"所指向字符串的字符位置
-	    5. 根据 currentNum = (((int)word.charAt(deep) - 96)) % 27 可以获取当前深度(即指针所在字符串位置)的输入字符
-	    6. 根据5所得的currentNum而调用move函数，去判断输入该字符，得出可能迁移到的状态 nextStates
-	    7. 根据6所得的nextStates，分别遍历数组中可能到达的状态，分别使用递归，继续向下搜寻，直至遍历完整个字符串
-	    8. 将7递归完后的结尾状态，加入到result当中，作为一条可能路径的结尾
-	    9. 根据8所得的result容器，遍历其中，寻找是否有与accept_state匹配的状态
-	        -> 有：return true
-	        -> 无：return false
-
-	recursive(Vector<Integer> result, int nextState,
-		int[] nextStates, int deep, String word, int move[][][])　-> 用以按照某条路径递归至字符串末尾
-		@param result -> 存放每条路径末尾状态
-		@param nextState -> 当前输入字符选择前往的下一个状态
-		@param nextStates -> 当前输入字符可以前往的状态集
-		@param deep -> 当前输入的位置
-		@param word -> 输入的字符串
-		@param move -> 状态转换表
+	    1. 首先计算出开始状态0，只经过ε，所能到达的状态S，即初始状态，调用函数addState
+	    2. 根据所得到的初始集合S，遍历字符串word的每个字符c
+	    3. 计算 S = ε-closure(move(S,c))，即计算出S当中能到达下一个字符c的状态，并重新计算这些状态addState，即只经过ε能到达的状态
+	    4. 上述第3步过程中，即调用了S = ε-closure(move(S,c))的实现函数，伪代码于 NFA.java当中
+	    5. 遍历完字符串word后，判断最终得到的oldStates状态当中，是否纯在 接受状态
 
 	main -> 迁移数组、结束数组的初始化，调用recognizeString函数进行匹配
 
 
 
 PS：
-1. 对于不可能到达末尾状态的，没有进行剪枝，任其递归，效率较慢
+1. 对于前一版本，已经实现了对 空串 的处理
 
-2. 没有对输入 空串的 处理(详细算法参考书本 模拟NFA)
+2. 本代码伪代码来自于 龙书第二版 NFA的模拟
 
 3. NFA状态转移图(|3|表示3为接受态)
 			 _ a _

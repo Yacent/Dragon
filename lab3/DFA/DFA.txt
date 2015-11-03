@@ -1,5 +1,5 @@
 如何运行脚本
-	根目录下打开控制台, DFA.bat 或者 DFA.bat
+	根目录下打开控制台, run.bat 或者 run.bat
 
 程序相关说明：
 	recognizeString(int move[][], int accept_state[], String word) -> 对输入字符串进行匹配
